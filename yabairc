@@ -33,7 +33,40 @@ yabai -m config mouse_drop_action swap
 # bsptile's "deny fullscreen/maximize on open": force anything that opens
 # already fullscreened/zoomed back into the tiled layout instead.
 yabai -m signal --add event=window_created \
-    action='yabai -m window "$YABAI_WINDOW_ID" --toggle zoom-fullscreen 2>/dev/null; yabai -m window "$YABAI_WINDOW_ID" --toggle native-fullscreen 2>/dev/null'
+    action='state=$(yabai -m query --windows --window "$YABAI_WINDOW_ID" 2>/dev/null);
+        [ -n "$state" ] && [ "$(echo "$state" | jq -r ".\"has-fullscreen-zoom\"")" = "true" ] && yabai -m window "$YABAI_WINDOW_ID" --toggle zoom-fullscreen 2>/dev/null;
+        [ -n "$state" ] && [ "$(echo "$state" | jq -r ".\"is-native-fullscreen\"")" = "true" ] && yabai -m window "$YABAI_WINDOW_ID" --toggle native-fullscreen 2>/dev/null;
+        true'
+
+# when a window closes, send focus back to whichever window was focused
+# before it -- yabai's own `recent` selector is only a single-slot
+# previous-window pointer (not a real history), so closing two windows in a
+# row in the order they were focused makes the second `recent` point at a
+# window that's already gone and focus lands on nothing. Keep a real MRU
+# history stack instead: record every window_focused event, and on
+# window_destroyed strip the closed window out and refocus whatever's now
+# most recent (and still alive).
+FOCUS_HISTORY="$HOME/.cache/yabai/focus_history"
+mkdir -p "$(dirname "$FOCUS_HISTORY")"
+# seed with whatever's already focused right now -- otherwise a window that
+# was focused before yabai (re)started never fires window_focused and can
+# never become a fallback target.
+yabai -m query --windows 2>/dev/null | jq -r '.[] | select(."has-focus")? | .id' > "$FOCUS_HISTORY"
+
+yabai -m signal --add event=window_focused \
+    action="echo \"\$YABAI_WINDOW_ID\" >> \"$FOCUS_HISTORY\""
+
+yabai -m signal --add event=window_destroyed \
+    action="hist=\"$FOCUS_HISTORY\";
+        [ -f \"\$hist\" ] || exit 0;
+        grep -vx \"\$YABAI_WINDOW_ID\" \"\$hist\" > \"\$hist.tmp\" 2>/dev/null && mv \"\$hist.tmp\" \"\$hist\";
+        live_ids=\$(yabai -m query --windows | jq -r '.[].id');
+        target=\"\";
+        while IFS= read -r id; do
+            echo \"\$live_ids\" | grep -qx \"\$id\" && target=\"\$id\";
+        done < \"\$hist\";
+        [ -n \"\$target\" ] && yabai -m window --focus \"\$target\" 2>/dev/null;
+        true"
 
 # --- app rules ------------------------------------------------------------
 # Settings-style panels and Finder don't tile well anywhere (same spirit as

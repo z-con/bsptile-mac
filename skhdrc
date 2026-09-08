@@ -4,12 +4,10 @@
 # Super, so this port uses cmd+alt as the base modifier instead. See
 # README.md for the full mapping and rationale.
 
-BIN="$HOME/projects/bsptile-mac/bin"
-
 # --- tiling: pull/release the focused window -------------------------------
 # bsptile: Super+T / Super+Shift+T
-cmd + alt - t         : "$BIN"/tile-focused.sh
-cmd + alt + shift - t : "$BIN"/untile-focused.sh
+cmd + alt - t         : "$HOME/Repos/Sandbox/bsptile-mac/bin"/tile-focused.sh
+cmd + alt + shift - t : "$HOME/Repos/Sandbox/bsptile-mac/bin"/untile-focused.sh
 
 # --- resize the shared divider ---------------------------------------------
 # bsptile: Ctrl+Super+Arrow keys
@@ -36,30 +34,31 @@ cmd + alt - w : yabai -m window --close
 # native per-display Spaces (System Settings > Desktop & Dock > "Displays
 # have separate Spaces" must be ON, which is the macOS default) instead of
 # bsptile's simulated minimize/unminimize approach. See bin/space-focus.sh.
-cmd + alt - 1 : "$BIN"/space-focus.sh 1
-cmd + alt - 2 : "$BIN"/space-focus.sh 2
-cmd + alt - 3 : "$BIN"/space-focus.sh 3
-cmd + alt - 4 : "$BIN"/space-focus.sh 4
-cmd + alt - 5 : "$BIN"/space-focus.sh 5
-cmd + alt - 6 : "$BIN"/space-focus.sh 6
-cmd + alt - 7 : "$BIN"/space-focus.sh 7
-cmd + alt - 8 : "$BIN"/space-focus.sh 8
-cmd + alt - 9 : "$BIN"/space-focus.sh 9
-cmd + alt - 0 : "$BIN"/space-focus.sh 0
+cmd + alt - 1 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-focus.sh 1
+cmd + alt - 2 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-focus.sh 2
+cmd + alt - 3 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-focus.sh 3
+cmd + alt - 4 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-focus.sh 4
+cmd + alt - 5 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-focus.sh 5
+cmd + alt - 6 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-focus.sh 6
+cmd + alt - 7 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-focus.sh 7
+cmd + alt - 8 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-focus.sh 8
+cmd + alt - 9 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-focus.sh 9
+cmd + alt - 0 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-focus.sh 0
 
-cmd + alt + shift - 1 : "$BIN"/space-move.sh 1
-cmd + alt + shift - 2 : "$BIN"/space-move.sh 2
-cmd + alt + shift - 3 : "$BIN"/space-move.sh 3
-cmd + alt + shift - 4 : "$BIN"/space-move.sh 4
-cmd + alt + shift - 5 : "$BIN"/space-move.sh 5
-cmd + alt + shift - 6 : "$BIN"/space-move.sh 6
-cmd + alt + shift - 7 : "$BIN"/space-move.sh 7
-cmd + alt + shift - 8 : "$BIN"/space-move.sh 8
-cmd + alt + shift - 9 : "$BIN"/space-move.sh 9
-cmd + alt + shift - 0 : "$BIN"/space-move.sh 0
+cmd + alt + shift - 1 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-move.sh 1
+cmd + alt + shift - 2 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-move.sh 2
+cmd + alt + shift - 3 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-move.sh 3
+cmd + alt + shift - 4 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-move.sh 4
+cmd + alt + shift - 5 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-move.sh 5
+cmd + alt + shift - 6 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-move.sh 6
+cmd + alt + shift - 7 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-move.sh 7
+cmd + alt + shift - 8 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-move.sh 8
+cmd + alt + shift - 9 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-move.sh 9
+cmd + alt + shift - 0 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-move.sh 0
 
 # --- terminal / app launch ---------------------------------------------------
 # bsptile: Super+Return / Shift+Super+Return / Ctrl+Super+Return
+cmd - return               : open -na Ghostty
 cmd + alt - return         : open -na Ghostty
 cmd + alt + shift - return : open -na Firefox --args --new-window
 ctrl + cmd + alt - return  : open -na Ghostty --args -e "sh -c 'cd ~/Claude && claude'"

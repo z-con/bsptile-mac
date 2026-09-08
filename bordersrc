@@ -5,9 +5,9 @@
 # active_color to taste.
 options=(
 	style=round
-	width=4.0
+	width=8.0
 	hidpi=on
-	active_color=0xffe1e3e4
+	active_color=0xff9d4edd
 	inactive_color=0x00000000
 )
 
