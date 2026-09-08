@@ -1,0 +1,68 @@
+# bsptile-mac: skhd keybindings
+# Ported from github.com/z-con/bsptile. GNOME used Super (Windows key) for
+# everything; macOS overloads Cmd far more heavily than GNOME overloads
+# Super, so this port uses cmd+alt as the base modifier instead. See
+# README.md for the full mapping and rationale.
+
+BIN="$HOME/projects/bsptile-mac/bin"
+
+# --- tiling: pull/release the focused window -------------------------------
+# bsptile: Super+T / Super+Shift+T
+cmd + alt - t         : "$BIN"/tile-focused.sh
+cmd + alt + shift - t : "$BIN"/untile-focused.sh
+
+# --- resize the shared divider ---------------------------------------------
+# bsptile: Ctrl+Super+Arrow keys
+ctrl + cmd + alt - left  : yabai -m window --resize left:-20:0   || yabai -m window --resize right:-20:0
+ctrl + cmd + alt - right : yabai -m window --resize right:20:0   || yabai -m window --resize left:20:0
+ctrl + cmd + alt - up    : yabai -m window --resize top:0:-20    || yabai -m window --resize bottom:0:-20
+ctrl + cmd + alt - down  : yabai -m window --resize bottom:0:20  || yabai -m window --resize top:0:20
+
+# --- directional focus movement --------------------------------------------
+# Not part of bsptile's own keymap (Alt-Tab covered this on GNOME) -- added
+# here because macOS's Cmd+Tab is app-based, not window-based, so it doesn't
+# give you directional movement through a bsp tree the way Alt-Tab did.
+cmd + alt - h : yabai -m window --focus west
+cmd + alt - j : yabai -m window --focus south
+cmd + alt - k : yabai -m window --focus north
+cmd + alt - l : yabai -m window --focus east
+
+# --- close focused window ---------------------------------------------------
+# bsptile: Super+W
+cmd + alt - w : yabai -m window --close
+
+# --- per-monitor virtual workspaces ------------------------------------------
+# bsptile: Super+1..9,0 / Super+Shift+1..9,0. On macOS this rides yabai's
+# native per-display Spaces (System Settings > Desktop & Dock > "Displays
+# have separate Spaces" must be ON, which is the macOS default) instead of
+# bsptile's simulated minimize/unminimize approach. See bin/space-focus.sh.
+cmd + alt - 1 : "$BIN"/space-focus.sh 1
+cmd + alt - 2 : "$BIN"/space-focus.sh 2
+cmd + alt - 3 : "$BIN"/space-focus.sh 3
+cmd + alt - 4 : "$BIN"/space-focus.sh 4
+cmd + alt - 5 : "$BIN"/space-focus.sh 5
+cmd + alt - 6 : "$BIN"/space-focus.sh 6
+cmd + alt - 7 : "$BIN"/space-focus.sh 7
+cmd + alt - 8 : "$BIN"/space-focus.sh 8
+cmd + alt - 9 : "$BIN"/space-focus.sh 9
+cmd + alt - 0 : "$BIN"/space-focus.sh 0
+
+cmd + alt + shift - 1 : "$BIN"/space-move.sh 1
+cmd + alt + shift - 2 : "$BIN"/space-move.sh 2
+cmd + alt + shift - 3 : "$BIN"/space-move.sh 3
+cmd + alt + shift - 4 : "$BIN"/space-move.sh 4
+cmd + alt + shift - 5 : "$BIN"/space-move.sh 5
+cmd + alt + shift - 6 : "$BIN"/space-move.sh 6
+cmd + alt + shift - 7 : "$BIN"/space-move.sh 7
+cmd + alt + shift - 8 : "$BIN"/space-move.sh 8
+cmd + alt + shift - 9 : "$BIN"/space-move.sh 9
+cmd + alt + shift - 0 : "$BIN"/space-move.sh 0
+
+# --- terminal / app launch ---------------------------------------------------
+# bsptile: Super+Return / Shift+Super+Return / Ctrl+Super+Return
+cmd + alt - return         : open -na Ghostty
+cmd + alt + shift - return : open -na Firefox --args --new-window
+ctrl + cmd + alt - return  : open -na Ghostty --args -e "sh -c 'cd ~/Claude && claude'"
+
+# Note: no remap for Activities/Overview -- macOS already has Cmd+Space
+# (Spotlight) as the equivalent, no need to take over another binding for it.

@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# bsptile-mac: JankyBorders config -- mirrors bsptile's focus border (a thin
+# outline around whichever window is focused). macOS has no GNOME-style
+# "accent color" API to read from, so this is a fixed color; change
+# active_color to taste.
+options=(
+	style=round
+	width=4.0
+	hidpi=on
+	active_color=0xffe1e3e4
+	inactive_color=0x00000000
+)
+
+borders "${options[@]}"

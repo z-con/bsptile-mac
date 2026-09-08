@@ -1,0 +1,47 @@
+#!/usr/bin/env sh
+# bsptile-mac: yabai config
+# Ported from github.com/z-con/bsptile (GNOME Shell extension) to macOS via
+# yabai as the tiling foundation. See README.md for the full feature mapping.
+
+# --- layout ---------------------------------------------------------------
+yabai -m config layout bsp
+yabai -m config auto_balance off
+yabai -m config split_ratio 0.5
+
+# gaps -- matches bsptile's default inner-gaps/outer-gaps of 12px each
+yabai -m config window_gap 12
+yabai -m config top_padding 12
+yabai -m config bottom_padding 12
+yabai -m config left_padding 12
+yabai -m config right_padding 12
+
+# --- focus ------------------------------------------------------------------
+# GNOME side ran focus-mode=mouse (focus-follows-cursor). autofocus is the
+# yabai equivalent: raise+focus whatever's under the pointer, no click needed.
+yabai -m config focus_follows_mouse autofocus
+yabai -m config mouse_follows_focus off
+
+# --- mouse --------------------------------------------------------------
+# hold this modifier + drag to move/resize; drop a tiled window onto another
+# tiled window to swap them (bsptile's "swap on drop").
+yabai -m config mouse_modifier alt
+yabai -m config mouse_action1 move
+yabai -m config mouse_action2 resize
+yabai -m config mouse_drop_action swap
+
+# --- new-window behavior --------------------------------------------------
+# bsptile's "deny fullscreen/maximize on open": force anything that opens
+# already fullscreened/zoomed back into the tiled layout instead.
+yabai -m signal --add event=window_created \
+    action='yabai -m window "$YABAI_WINDOW_ID" --toggle zoom-fullscreen 2>/dev/null; yabai -m window "$YABAI_WINDOW_ID" --toggle native-fullscreen 2>/dev/null'
+
+# --- app rules ------------------------------------------------------------
+# Settings-style panels and Finder don't tile well anywhere (same spirit as
+# bsptile leaving non-tileable windows alone rather than fighting them).
+yabai -m rule --add app="^System Settings$" manage=off
+yabai -m rule --add app="^System Preferences$" manage=off
+yabai -m rule --add app="^Finder$" manage=off sticky=on
+yabai -m rule --add app="^Archive Utility$" manage=off
+yabai -m rule --add title="^(Preferences|Settings)$" manage=off
+
+echo "bsptile-mac yabairc loaded"
