@@ -48,9 +48,22 @@ chmod +x "$REPO_DIR"/bin/*.sh "$REPO_DIR/yabairc" "$REPO_DIR/bordersrc"
 # ghostty-new-window.app is built fresh on each machine rather than
 # committed as a binary -- osacompile ad-hoc signs it per-machine anyway.
 # See bin/ghostty-new-window.applescript for why this needs to be a real
-# .app instead of a bare `osascript` call.
+# .app bundle rather than a bare, standalone .scpt file (new-ghostty-
+# window.sh runs the script inside it via `osascript`, never launches the
+# bundle itself as an app).
 rm -rf "$REPO_DIR/bin/ghostty-new-window.app"
 osacompile -o "$REPO_DIR/bin/ghostty-new-window.app" "$REPO_DIR/bin/ghostty-new-window.applescript"
+# A stable CFBundleIdentifier (osacompile doesn't set one) so macOS's TCC
+# tracks this app's Automation/Accessibility grants by identity rather than
+# by path -- without it, re-running this script (which recompiles the app
+# fresh every time) silently invalidates prior grants and needs re-approval
+# each time. NSSupportsAutomaticTermination/NSSupportsSuddenTermination:
+# this app never shows a window, which otherwise makes it a target for
+# macOS's automatic-termination cleanup for idle no-window apps.
+/usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.bsptile-mac.ghostty-new-window" "$REPO_DIR/bin/ghostty-new-window.app/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Add :NSSupportsAutomaticTermination bool false" "$REPO_DIR/bin/ghostty-new-window.app/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Add :NSSupportsSuddenTermination bool false" "$REPO_DIR/bin/ghostty-new-window.app/Contents/Info.plist"
+codesign --force --deep -s - "$REPO_DIR/bin/ghostty-new-window.app"
 
 # --- start/reload services ----------------------------------------------------
 # yabai and skhd manage their own launchd services (--start-service) rather
@@ -81,15 +94,16 @@ hand -- none of this can be scripted:
 3. If drag-to-edge window snapping fights with yabai's tiling, turn it off:
    System Settings > Desktop & Dock > "Drag windows to screen edges to tile" -> OFF.
 
-4. Cmd+Return (new Ghostty window) needs a one-time manual step: launch
-   bin/ghostty-new-window.app once yourself --
-     open "$REPO_DIR/bin/ghostty-new-window.app"
-   macOS will prompt to let it control "System Events" -- allow it. This
-   can't be scripted: skhd is a headless daemon with no GUI app identity,
-   so macOS has nothing to attribute that permission prompt to if skhd
-   triggers it first. Launching the compiled .app yourself, once, gives
-   it that identity and the grant carries over to skhd's later launches
-   of the same .app.
+4. Cmd+Return (new Ghostty window) needs a one-time manual step: run the
+   compiled helper once yourself, the same way skhd will run it --
+     osascript "$REPO_DIR/bin/ghostty-new-window.app/Contents/Resources/Scripts/main.scpt"
+   macOS will prompt to let it control "System Events" -- allow it (and
+   Accessibility, if it separately asks). This can't be scripted: skhd is
+   a headless daemon with no GUI app identity, so macOS has nothing to
+   attribute that permission prompt to if skhd triggers it first. Running
+   it yourself once, from a real Terminal, gives the compiled app's bundle
+   identity that grant, and it carries over to skhd's later runs of the
+   same script.
 
 5. Optional/advanced, NOT done by this script: yabai's scripting addition
    (borderless resizing across every space, some extra window rules) requires
