@@ -58,8 +58,8 @@ cmd + alt + shift - 0 : "$HOME/Repos/Sandbox/bsptile-mac/bin"/space-move.sh 0
 
 # --- terminal / app launch ---------------------------------------------------
 # bsptile: Super+Return / Shift+Super+Return / Ctrl+Super+Return
-cmd - return               : open -na Ghostty
-cmd + alt - return         : open -na Ghostty
+cmd - return               : "$HOME/Repos/Sandbox/bsptile-mac/bin"/new-ghostty-window.sh
+cmd + alt - return         : "$HOME/Repos/Sandbox/bsptile-mac/bin"/new-ghostty-window.sh
 cmd + alt + shift - return : open -na Firefox --args --new-window
 ctrl + cmd + alt - return  : open -na Ghostty --args -e "sh -c 'cd ~/Claude && claude'"
 
