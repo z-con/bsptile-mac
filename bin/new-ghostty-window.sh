@@ -5,14 +5,18 @@
 # closed with Cmd+W -- only Cmd+Q actually quits each spawned process.
 # Ghostty has no macOS IPC "new window" action (`ghostty +new-window` errors
 # as unsupported on this platform), so instead activate the existing
-# instance and simulate its own New Window keybind (cmd+n).
+# instance and simulate its own New Window keybind (cmd+n) via the compiled
+# ghostty-new-window.app (see ghostty-new-window.applescript for why this
+# has to be a real .app rather than a bare `osascript` call -- skhd is a
+# headless daemon with no GUI identity for macOS to attribute the required
+# System Events Automation permission to).
 #
 # NOTE: don't use `pgrep` to check whether Ghostty is already running --
 # it's unreliable in this environment (observed to flake on an exact,
 # verified-correct pattern from one invocation to the next). yabai's window
 # list has been solid throughout, so use that instead.
 #
-# Both `open -a` activation and the synthetic keystroke are asynchronous and
+# The applet's activation + synthetic keystroke are asynchronous and
 # occasionally don't land (the keystroke can fire before Ghostty is truly
 # frontmost), and a naive window-count comparison taken immediately
 # afterwards can race with yabai's own internal state settling. Compare the
@@ -20,6 +24,8 @@
 # present after a short settle period before declaring success, retrying a
 # few times otherwise.
 set -uo pipefail
+
+BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 ghostty_window_ids() {
     yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app == "Ghostty") | .id' | sort -n
@@ -35,10 +41,8 @@ if [ -z "$before" ]; then
 fi
 
 for attempt in 1 2 3 4 5; do
-    open -a Ghostty
-    sleep 0.4
-    osascript -e 'tell application "System Events" to keystroke "n" using command down' >/dev/null 2>&1
-    sleep 0.4
+    open -a "$BIN_DIR/ghostty-new-window.app"
+    sleep 0.8
     after="$(ghostty_window_ids)"
     new_id="$(comm -13 <(echo "$before") <(echo "$after"))"
     if [ -n "$new_id" ]; then

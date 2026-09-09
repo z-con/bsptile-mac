@@ -44,6 +44,14 @@ link "$REPO_DIR/bordersrc" "$HOME/.config/borders/bordersrc"
 
 chmod +x "$REPO_DIR"/bin/*.sh "$REPO_DIR/yabairc" "$REPO_DIR/bordersrc"
 
+# --- compiled helper app --------------------------------------------------
+# ghostty-new-window.app is built fresh on each machine rather than
+# committed as a binary -- osacompile ad-hoc signs it per-machine anyway.
+# See bin/ghostty-new-window.applescript for why this needs to be a real
+# .app instead of a bare `osascript` call.
+rm -rf "$REPO_DIR/bin/ghostty-new-window.app"
+osacompile -o "$REPO_DIR/bin/ghostty-new-window.app" "$REPO_DIR/bin/ghostty-new-window.applescript"
+
 # --- start/reload services ----------------------------------------------------
 # yabai and skhd manage their own launchd services (--start-service) rather
 # than implementing brew's #plist/#service hooks -- `brew services restart`
@@ -55,7 +63,7 @@ skhd --stop-service >/dev/null 2>&1 || true
 skhd --start-service
 brew services restart borders
 
-cat <<'EOF'
+cat <<EOF
 
 bsptile-mac config installed. A few things macOS/yabai require you to do by
 hand -- none of this can be scripted:
@@ -73,7 +81,17 @@ hand -- none of this can be scripted:
 3. If drag-to-edge window snapping fights with yabai's tiling, turn it off:
    System Settings > Desktop & Dock > "Drag windows to screen edges to tile" -> OFF.
 
-4. Optional/advanced, NOT done by this script: yabai's scripting addition
+4. Cmd+Return (new Ghostty window) needs a one-time manual step: launch
+   bin/ghostty-new-window.app once yourself --
+     open "$REPO_DIR/bin/ghostty-new-window.app"
+   macOS will prompt to let it control "System Events" -- allow it. This
+   can't be scripted: skhd is a headless daemon with no GUI app identity,
+   so macOS has nothing to attribute that permission prompt to if skhd
+   triggers it first. Launching the compiled .app yourself, once, gives
+   it that identity and the grant carries over to skhd's later launches
+   of the same .app.
+
+5. Optional/advanced, NOT done by this script: yabai's scripting addition
    (borderless resizing across every space, some extra window rules) requires
    partially disabling System Integrity Protection and a reboot into Recovery
    Mode. Read https://github.com/koekeishiya/yabai/wiki/Disabling-System-Integrity-Protection

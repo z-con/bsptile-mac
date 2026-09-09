@@ -31,7 +31,7 @@ keybindings), same as `bsptile/` itself -- not a full machine bootstrap like
 | Workspace/monitor migration | Native (yabai handles this) |
 | Per-monitor virtual workspaces | Native per-display Spaces + `bin/space-focus.sh` / `bin/space-move.sh` for the `Super+1..9,0` mapping (see below) |
 | Per-monitor slot indicator (dot row) | Not ported -- out of scope for the tiling layer; a menu-bar tool like [SketchyBar](https://github.com/FelixKratz/SketchyBar) could add this later |
-| Terminal/app launch keybinds | `cmd+alt-return` / `cmd+alt+shift-return` / `ctrl+cmd+alt-return` in `skhdrc` |
+| Terminal/app launch keybinds | `cmd-return` / `cmd+alt-return` (new Ghostty window, via `bin/new-ghostty-window.sh`) / `cmd+alt+shift-return` / `ctrl+cmd+alt-return` in `skhdrc` |
 
 **Modifier key**: bsptile used `Super` (Windows key) for everything, because
 GNOME barely uses it. macOS leans on `Cmd` far more heavily for app and
@@ -70,12 +70,17 @@ cd bsptile-mac
 3. Symlink `yabairc` -> `~/.yabairc`, `skhdrc` -> `~/.skhdrc`, `bordersrc` ->
    `~/.config/borders/bordersrc`, backing up anything pre-existing that
    isn't already the symlink.
-4. Restart the yabai/skhd/borders `brew services` so config takes effect.
+4. Compile `bin/ghostty-new-window.applescript` into `bin/ghostty-new-window.app`
+   (used by the Cmd+Return keybind -- see Configuration below).
+5. Start/restart yabai and skhd via `--start-service` (not `brew services` --
+   neither formula implements brew's service hooks) and restart the borders
+   `brew services` entry, so config takes effect.
 
 It will then print a short list of manual, one-time macOS steps that
 genuinely can't be scripted (Accessibility permissions, confirming
-per-display Spaces is on, and turning off macOS's own drag-to-edge tiling
-if it fights with yabai) -- read that output.
+per-display Spaces is on, turning off macOS's own drag-to-edge tiling if it
+fights with yabai, and one Automation-permission grant for the new-window
+helper app) -- read that output.
 
 **Not automated on purpose**: yabai's *scripting addition* (which unlocks
 borderless resizing across spaces and a few extra window rules) requires
@@ -88,18 +93,25 @@ if you want it; everything else in this repo works fine without it.
 ## Configuration
 
 - **Gaps**: edit `window_gap` / `*_padding` in `yabairc`, then
-  `brew services restart yabai` (or `yabai --restart-service`).
+  `yabai --restart-service` (yabai manages its own launchd service, not
+  `brew services`).
 - **Focus border color/width**: edit `active_color`/`width` in `bordersrc`
   (hex is `0xAARRGGBB`), then `brew services restart borders`.
-- **Keybindings**: edit `skhdrc`, then `brew services restart skhd` (or
-  `skhd --reload`... skhd doesn't support that; restart the service).
+- **Keybindings**: edit `skhdrc`, then `skhd --stop-service && skhd --start-service`
+  (skhd also manages its own service, and doesn't support a live reload).
 - **App tiling rules**: add more `yabai -m rule --add app="..."` lines in
   `yabairc` for anything else that shouldn't be managed.
+- **New-window helper app**: `bin/ghostty-new-window.app` is compiled from
+  `bin/ghostty-new-window.applescript` by `install.sh`; edit the `.applescript`
+  source and re-run `install.sh` (or `osacompile -o bin/ghostty-new-window.app
+  bin/ghostty-new-window.applescript`) to change it.
 
 ## Uninstall
 
 ```sh
-brew services stop yabai skhd borders
+yabai --stop-service
+skhd --stop-service
+brew services stop borders
 rm ~/.yabairc ~/.skhdrc ~/.config/borders/bordersrc   # just the symlinks
 brew uninstall yabai skhd borders jq   # optional
 ```
