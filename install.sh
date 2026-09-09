@@ -45,8 +45,14 @@ link "$REPO_DIR/bordersrc" "$HOME/.config/borders/bordersrc"
 chmod +x "$REPO_DIR"/bin/*.sh "$REPO_DIR/yabairc" "$REPO_DIR/bordersrc"
 
 # --- start/reload services ----------------------------------------------------
-brew services restart yabai
-brew services restart skhd
+# yabai and skhd manage their own launchd services (--start-service) rather
+# than implementing brew's #plist/#service hooks -- `brew services restart`
+# on either fails with "has not implemented #plist, #service or provided a
+# locatable service file". borders is a normal brew service.
+yabai --stop-service >/dev/null 2>&1 || true
+yabai --start-service
+skhd --stop-service >/dev/null 2>&1 || true
+skhd --start-service
 brew services restart borders
 
 cat <<'EOF'
