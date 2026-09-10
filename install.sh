@@ -44,6 +44,15 @@ link "$REPO_DIR/bordersrc" "$HOME/.config/borders/bordersrc"
 
 chmod +x "$REPO_DIR"/bin/*.sh "$REPO_DIR/yabairc" "$REPO_DIR/bordersrc"
 
+# --- macOS behavior tweaks -------------------------------------------------
+# Mission Control's "switch to a Space with open windows for the
+# application" (on by default) fights the whole point of per-monitor
+# workspaces: switch to an *empty* space and press Cmd+Return, and
+# activating Ghostty auto-switches back to whatever space its other
+# windows are already on before the new window is created there instead.
+defaults write com.apple.dock workspaces-auto-swoosh -bool NO
+killall Dock >/dev/null 2>&1 || true
+
 # --- compiled helper app --------------------------------------------------
 # ghostty-new-window.app is built fresh on each machine rather than
 # committed as a binary -- osacompile ad-hoc signs it per-machine anyway.
