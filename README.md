@@ -30,6 +30,7 @@ keybindings), same as `bsptile/` itself -- not a full machine bootstrap like
 | `Ctrl+Super+Arrow` resize divider | `ctrl+cmd+alt-arrows` -> `yabai -m window --resize` |
 | Workspace/monitor migration | Native (yabai handles this) |
 | Per-monitor virtual workspaces | Native per-display Spaces + `bin/space-focus.sh` / `bin/space-move.sh` for the `Super+1..9,0` mapping (see below) |
+| Direct workspace jump (no creation) | Not from bsptile -- `cmd-1..9,0` -> `bin/space-goto.sh` (see below) |
 | Dynamic workspaces (destroy empty ones on leave, keep one spare) | `bin/purge-empty-space.sh` on `space_changed` + `bin/ensure-spare-space.sh` on `window_created` + `bin/consolidate-spare-spaces.sh` on `window_destroyed` (see below) |
 | Per-monitor slot indicator (dot row) | Not ported -- out of scope for the tiling layer; a menu-bar tool like [SketchyBar](https://github.com/FelixKratz/SketchyBar) could add this later |
 | Terminal/app launch keybinds | `cmd-return` / `cmd+alt-return` (new Ghostty window, via `bin/new-ghostty-window.sh`) / `cmd+alt+shift-return` / `ctrl+cmd+alt-return` in `skhdrc` |
@@ -50,6 +51,15 @@ dynamic-growing-slots behavior -- but riding real macOS Spaces instead of a
 simulation. Slot creation goes through Mission Control's own "+" button via
 Accessibility rather than `yabai -m space --create`, which needs SIP
 partially disabled -- see `bin/create-space.sh`.
+
+**Direct workspace jump**: `cmd-1..9,0` (bare Cmd, not `cmd+alt` like the
+slot bindings above) jumps straight to slot N on the currently focused
+display via `bin/space-goto.sh` -- unlike `space-focus.sh`, it never
+creates new slots; if N is beyond however many currently exist, it lands
+on the last one (the spare) instead. Note this globally overrides whatever
+Cmd+1..9 already does inside individual apps (browser tab switching,
+Finder view modes, and similar) -- exactly the kind of collision `cmd+alt`
+was chosen everywhere else in this repo to avoid.
 
 **Dynamic workspaces**: mirroring bsptile's own behavior, two complementary
 scripts keep exactly one empty "spare" space at the end of each display's

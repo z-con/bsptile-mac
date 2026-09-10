@@ -56,6 +56,26 @@ cmd + alt + shift - 8 : "$(dirname "$(readlink "$HOME/.skhdrc")")/bin"/space-mov
 cmd + alt + shift - 9 : "$(dirname "$(readlink "$HOME/.skhdrc")")/bin"/space-move.sh 9
 cmd + alt + shift - 0 : "$(dirname "$(readlink "$HOME/.skhdrc")")/bin"/space-move.sh 0
 
+# --- direct workspace jump, no creation ------------------------------------
+# bare Cmd+1..9,0 -- NOT cmd+alt like the slot bindings above, by request.
+# Note this globally overrides whatever Cmd+1..9 already does inside
+# individual apps (browser tab switching, Finder view modes, etc.) --
+# exactly the kind of collision cmd+alt was chosen everywhere else in this
+# file to avoid (see the top of this file). Jumps straight to slot N on the
+# currently focused display if it exists; if N is beyond however many
+# slots currently exist, lands on the last one (the spare) instead of
+# creating empty slots up to N -- see bin/space-goto.sh.
+cmd - 1 : "$(dirname "$(readlink "$HOME/.skhdrc")")/bin"/space-goto.sh 1
+cmd - 2 : "$(dirname "$(readlink "$HOME/.skhdrc")")/bin"/space-goto.sh 2
+cmd - 3 : "$(dirname "$(readlink "$HOME/.skhdrc")")/bin"/space-goto.sh 3
+cmd - 4 : "$(dirname "$(readlink "$HOME/.skhdrc")")/bin"/space-goto.sh 4
+cmd - 5 : "$(dirname "$(readlink "$HOME/.skhdrc")")/bin"/space-goto.sh 5
+cmd - 6 : "$(dirname "$(readlink "$HOME/.skhdrc")")/bin"/space-goto.sh 6
+cmd - 7 : "$(dirname "$(readlink "$HOME/.skhdrc")")/bin"/space-goto.sh 7
+cmd - 8 : "$(dirname "$(readlink "$HOME/.skhdrc")")/bin"/space-goto.sh 8
+cmd - 9 : "$(dirname "$(readlink "$HOME/.skhdrc")")/bin"/space-goto.sh 9
+cmd - 0 : "$(dirname "$(readlink "$HOME/.skhdrc")")/bin"/space-goto.sh 0
+
 # --- terminal / app launch ---------------------------------------------------
 # bsptile: Super+Return / Shift+Super+Return / Ctrl+Super+Return
 cmd - return               : "$(dirname "$(readlink "$HOME/.skhdrc")")/bin"/new-ghostty-window.sh
