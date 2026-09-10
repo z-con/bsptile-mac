@@ -72,6 +72,23 @@ yabai -m signal --add event=window_destroyed \
         [ -n \"\$target\" ] && yabai -m window --focus \"\$target\" 2>/dev/null;
         true"
 
+# --- dynamic workspaces: purge empty spaces on navigating away, and keep
+# --- one spare at the end -------------------------------------------------
+# mirrors bsptile's dynamic-workspaces behavior. See bin/purge-empty-space.sh
+# and bin/ensure-spare-space.sh for why these go through Mission Control's
+# own UI instead of yabai's `space --create`/`--destroy` (which need SIP
+# partially disabled).
+BIN_DIR="$(dirname "$(readlink "$HOME/.yabairc")")/bin"
+yabai -m signal --add event=space_changed \
+    action="\"$BIN_DIR/purge-empty-space.sh\" \"\$YABAI_RECENT_SPACE_INDEX\""
+yabai -m signal --add event=window_created \
+    action="\"$BIN_DIR/ensure-spare-space.sh\" \"\$YABAI_WINDOW_ID\""
+# closing the last window on a space you're still sitting on (not
+# navigating away) can leave some other, now-redundant spare space behind
+# with nothing to clean it up -- see consolidate-spare-spaces.sh.
+yabai -m signal --add event=window_destroyed \
+    action="\"$BIN_DIR/consolidate-spare-spaces.sh\""
+
 # --- app rules ------------------------------------------------------------
 # Settings-style panels and Finder don't tile well anywhere (same spirit as
 # bsptile leaving non-tileable windows alone rather than fighting them).

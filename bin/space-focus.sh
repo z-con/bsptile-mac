@@ -9,31 +9,49 @@
 # and creates slots on demand, matching bsptile's dynamic-growing-slots
 # behavior.
 #
-# NOTE: untested on real hardware -- I don't have a Mac to run yabai on.
-# yabai's exact `space --create` display-targeting syntax has changed
-# across versions; verify this against your installed yabai's `man yabai`
-# if a slot fails to create, and see README.md's Known limitations.
+# Slot creation goes through create-space.sh (Mission Control's own "+"
+# button via Accessibility) rather than `yabai -m space --create`, which
+# needs SIP partially disabled -- see that script for the caveats,
+# including: untested with multiple displays.
 set -euo pipefail
+
+BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 n="${1:?usage: space-focus.sh <slot 1-10>}"
 [ "$n" = "0" ] && n=10
 
 display_idx=$(yabai -m query --displays --display | jq -r '.index')
 
-# spaces on this display, in on-screen order
-mapfile -t space_indexes < <(
-    yabai -m query --spaces | jq -r --argjson d "$display_idx" \
-        '[.[] | select(.display == $d)] | sort_by(.index) | .[].index'
-)
+# spaces on this display, in on-screen order. `mapfile` needs bash 4+;
+# macOS ships bash 3.2, so read into the array one line at a time instead.
+read_space_indexes() {
+    space_indexes=()
+    while IFS= read -r idx; do
+        space_indexes+=("$idx")
+    done < <(yabai -m query --spaces | jq -r --argjson d "$display_idx" \
+        '[.[] | select(.display == $d)] | sort_by(.index) | .[].index')
+}
+read_space_indexes
 
-while [ "${#space_indexes[@]}" -lt "$n" ]; do
-    yabai -m space --create "$display_idx" 2>/dev/null \
-        || { yabai -m space --create; yabai -m space last --display "$display_idx"; }
-    mapfile -t space_indexes < <(
-        yabai -m query --spaces | jq -r --argjson d "$display_idx" \
-            '[.[] | select(.display == $d)] | sort_by(.index) | .[].index'
-    )
+attempts=0
+while [ "${#space_indexes[@]}" -lt "$n" ] && [ "$attempts" -lt 10 ]; do
+    "$BIN_DIR/create-space.sh" || true
+    attempts=$((attempts + 1))
+    read_space_indexes
 done
 
+if [ "${#space_indexes[@]}" -lt "$n" ]; then
+    echo "space-focus.sh: could not create enough slots (stuck at ${#space_indexes[@]})" >&2
+    exit 1
+fi
+
 target="${space_indexes[$((n - 1))]}"
+
+# `mission-control is active` can briefly linger after create-space.sh (or
+# even an earlier, separate invocation moments before) closes it -- retry
+# rather than trusting a fixed delay to always be long enough.
+for i in 1 2 3 4 5; do
+    yabai -m space --focus "$target" 2>/dev/null && exit 0
+    sleep 0.3
+done
 yabai -m space --focus "$target"

@@ -115,12 +115,16 @@ hand -- none of this can be scripted:
    same script.
 
 5. Optional/advanced, NOT done by this script: yabai's scripting addition
-   (borderless resizing across every space, some extra window rules) requires
-   partially disabling System Integrity Protection and a reboot into Recovery
-   Mode. Read https://github.com/koekeishiya/yabai/wiki/Disabling-System-Integrity-Protection
+   (borderless resizing across every space, some extra window rules, and
+   bin/space-move.sh's window-to-another-slot step) requires partially
+   disabling System Integrity Protection and a reboot into Recovery Mode.
+   Read https://github.com/koekeishiya/yabai/wiki/Disabling-System-Integrity-Protection
    yourself before doing this -- it's a real security tradeoff, not a default
-   this script should silently apply.
+   this script should silently apply. Per-monitor slot creation, purging
+   empty slots, and keeping a spare slot available (bin/create-space.sh,
+   bin/purge-empty-space.sh, bin/ensure-spare-space.sh,
+   bin/consolidate-spare-spaces.sh, bin/remove-desktop.sh) all work without
+   this, via Mission Control's own UI instead.
 
-See README.md for the full feature list, keybindings, and known limitations
-(the per-display workspace scripts especially -- untested on real hardware).
+See README.md for the full feature list, keybindings, and known limitations.
 EOF

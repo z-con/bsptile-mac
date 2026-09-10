@@ -30,6 +30,7 @@ keybindings), same as `bsptile/` itself -- not a full machine bootstrap like
 | `Ctrl+Super+Arrow` resize divider | `ctrl+cmd+alt-arrows` -> `yabai -m window --resize` |
 | Workspace/monitor migration | Native (yabai handles this) |
 | Per-monitor virtual workspaces | Native per-display Spaces + `bin/space-focus.sh` / `bin/space-move.sh` for the `Super+1..9,0` mapping (see below) |
+| Dynamic workspaces (destroy empty ones on leave, keep one spare) | `bin/purge-empty-space.sh` on `space_changed` + `bin/ensure-spare-space.sh` on `window_created` + `bin/consolidate-spare-spaces.sh` on `window_destroyed` (see below) |
 | Per-monitor slot indicator (dot row) | Not ported -- out of scope for the tiling layer; a menu-bar tool like [SketchyBar](https://github.com/FelixKratz/SketchyBar) could add this later |
 | Terminal/app launch keybinds | `cmd-return` / `cmd+alt-return` (new Ghostty window, via `bin/new-ghostty-window.sh`) / `cmd+alt+shift-return` / `ctrl+cmd+alt-return` in `skhdrc` |
 
@@ -46,7 +47,35 @@ have separate Spaces" is on (the default). `bin/space-focus.sh` and
 `bin/space-move.sh` just resolve "slot N on the currently focused display"
 to the right yabai space and create new slots on demand, matching bsptile's
 dynamic-growing-slots behavior -- but riding real macOS Spaces instead of a
-simulation.
+simulation. Slot creation goes through Mission Control's own "+" button via
+Accessibility rather than `yabai -m space --create`, which needs SIP
+partially disabled -- see `bin/create-space.sh`.
+
+**Dynamic workspaces**: mirroring bsptile's own behavior, two complementary
+scripts keep exactly one empty "spare" space at the end of each display's
+row, matching bsptile's own dynamic-workspaces model. `bin/purge-empty-
+space.sh` (on `space_changed`) destroys a space you navigate away from if
+it's empty, except the one empty space immediately after the last occupied
+space on its display -- that one's kept as the always-available spare.
+`bin/ensure-spare-space.sh` (on `window_created`) is the second: when a
+new window lands on what's currently the last space on its display -- the
+spare just got used -- it creates a fresh one after it, including when you
+open the window without ever switching spaces (e.g. Cmd+Return while
+already sitting on the spare). A third, `bin/consolidate-spare-spaces.sh`
+(on `window_destroyed`), covers the gap neither of the first two can:
+closing the last window on a space you're still sitting on doesn't trigger
+`space_changed` (you never left) or create a new window, so the spare that
+came before it can be left behind with nothing to clean it up -- this
+sweeps every display for any empty, unfocused space beyond the properly
+reserved one and removes it. All three need a workaround for the same SIP
+requirement as slot creation: `yabai -m space --create`/`--destroy` won't
+work without it, so `bin/create-space.sh` and `bin/remove-desktop.sh` (the
+shared mechanism the other two call into) drive Mission Control's own
+per-Desktop "+" and remove (`AXRemoveDesktop`) actions via Accessibility
+instead, retrying if a first attempt doesn't visibly take effect -- this
+automation has been flaky often enough to need it. The visible cost is
+that Mission Control briefly flashes open and closed on screen each time a
+space gets purged or created.
 
 ## Requirements
 
@@ -121,14 +150,26 @@ automatically -- remove yabai/skhd from that list yourself if you want to.
 
 ## Known limitations
 
-- **`bin/space-focus.sh` and `bin/space-move.sh` are untested on real
-  hardware** -- this repo was built on a Linux machine with no Mac to run
-  yabai on. yabai's exact `space --create`/display-targeting flags have
-  shifted across versions; if slot creation fails, check `man yabai` (or
-  `yabai -m space --help`) against your installed version and fix the
-  fallback in those two scripts. The core tiling/gaps/border config
-  (`yabairc`, `bordersrc`) is far less likely to need changes since it's
-  yabai's own documented, stable config surface.
+- **Slot creation and empty-space purging go through Mission Control's own
+  UI, not yabai directly** -- `yabai -m space --create`/`--destroy` and
+  `window --space` all need System Integrity Protection partially disabled
+  (yabai's scripting-addition), which is a real security tradeoff this repo
+  doesn't apply for you. `bin/create-space.sh` and `bin/purge-empty-space.sh`
+  instead drive Mission Control's own "+" button and per-Desktop
+  `AXRemoveDesktop` action via Accessibility, which needs no such tradeoff --
+  see those two scripts for how. The cost: each briefly flashes Mission
+  Control open and closed on screen, and `bin/space-move.sh`'s window-move
+  step (`yabai -m window --space`) still needs SIP partially disabled, so
+  moving a window to another slot doesn't work without that.
+- **Both untested with multiple displays** -- Mission Control shows a
+  separate Spaces Bar per display when "Displays have separate Spaces" is
+  on; `create-space.sh`/`purge-empty-space.sh` target whichever one they
+  find first under the Dock process's UI tree, which is unambiguous on a
+  single display but may not hit the intended one on a multi-monitor setup.
+- **A slot created only to reach a higher one can be left behind empty** --
+  jumping straight to slot 5 with only 3 slots existing creates 4 and 5, but
+  purging only evaluates a space when you actually navigate away from it, so
+  slot 4 (never visited) can sit there until something eventually does.
 - **No visual per-monitor slot indicator** -- bsptile's dot-row (`● ● ○ ○`)
   isn't ported. If you want one, a menu-bar tool like SketchyBar could read
   `yabai -m query --spaces` and render it, but that's a separate project
