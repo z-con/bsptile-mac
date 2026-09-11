@@ -89,6 +89,22 @@ yabai -m signal --add event=window_created \
 yabai -m signal --add event=window_destroyed \
     action="\"$BIN_DIR/consolidate-spare-spaces.sh\""
 
+# --- external monitor disconnect/reconnect ---------------------------------
+# switch to space 1 on monitor 1 -- macOS's own merge-on-disconnect drops
+# the disconnected display's windows there; see handle-display-removed.sh.
+yabai -m signal --add event=display_removed \
+    action="\"$BIN_DIR/handle-display-removed.sh\""
+# on reconnect, macOS moves those windows back to the external display on
+# its own, but can leave space 1 empty with nothing to clean it up:
+# purge-empty-space.sh only fires when you navigate *away* from a space,
+# and these windows didn't close (window_destroyed) either, they just
+# moved displays -- so neither existing cleanup path notices on its own.
+# Reuses consolidate-spare-spaces.sh (same sweep already used for the
+# close-your-last-window-without-leaving gap) rather than a dedicated
+# script.
+yabai -m signal --add event=display_added \
+    action="sleep 1.5; \"$BIN_DIR/consolidate-spare-spaces.sh\""
+
 # --- app rules ------------------------------------------------------------
 # Settings-style panels and Finder don't tile well anywhere (same spirit as
 # bsptile leaving non-tileable windows alone rather than fighting them).

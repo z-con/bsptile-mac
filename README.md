@@ -28,7 +28,7 @@ keybindings), same as `bsptile/` itself -- not a full machine bootstrap like
 | Deny fullscreen/maximize on open | `window_created` signal in `yabairc` |
 | `Super+T` tile / `Super+Shift+T` untile | `cmd+alt-t` / `cmd+alt+shift-t` -> `bin/tile-focused.sh` / `bin/untile-focused.sh` |
 | `Ctrl+Super+Arrow` resize divider | `ctrl+cmd+alt-arrows` -> `yabai -m window --resize` |
-| Workspace/monitor migration | Native (yabai handles this) |
+| Workspace/monitor migration | Native (yabai handles this); on disconnect, `bin/handle-display-removed.sh` switches to where macOS actually put the windows (see below) |
 | Per-monitor virtual workspaces | Native per-display Spaces + `bin/space-focus.sh` / `bin/space-move.sh` for the `Super+1..9,0` mapping (see below) |
 | Direct workspace jump (no creation) | Not from bsptile -- `cmd-1..9,0` -> `bin/space-goto.sh` (see below) |
 | Dynamic workspaces (destroy empty ones on leave, keep one spare) | `bin/purge-empty-space.sh` on `space_changed` + `bin/ensure-spare-space.sh` on `window_created` + `bin/consolidate-spare-spaces.sh` on `window_destroyed` (see below) |
@@ -86,6 +86,31 @@ instead, retrying if a first attempt doesn't visibly take effect -- this
 automation has been flaky often enough to need it. The visible cost is
 that Mission Control briefly flashes open and closed on screen each time a
 space gets purged or created.
+
+**External monitor disconnect**: when a display disconnects, macOS itself
+already merges its windows onto space 1 on the remaining display -- there's
+no way to stop or redirect that. `bin/handle-display-removed.sh` (on
+`display_removed`) just switches monitor 1 to that space, so you're looking
+at where the windows actually landed instead of wherever you happened to be
+working. Deliberately just that: two earlier, more ambitious versions tried
+to actively redistribute the windows via synthetic drag-and-hold automation
+(the same technique used for the tricks above) -- first onto freshly
+created spaces preserving their original per-monitor groupings, then onto
+monitor 1's single spare space. Both worked in isolated testing; the first
+was unusably slow and visually chaotic on real hardware (worse, a real
+physical unplug fired `display_removed` more than once in quick succession,
+so multiple copies ran at once), and the second, while much lighter, still
+wasn't the experience wanted. This version has no automation left to go
+wrong.
+
+On reconnect, macOS moves those windows back to the external display on its
+own -- but can leave space 1 empty with nothing to notice: purge-empty-
+space.sh only fires when you navigate *away* from a space, and these
+windows didn't close (`window_destroyed`) either, they just changed
+displays, so neither existing cleanup path reacts on its own. `display_
+added` reuses `consolidate-spare-spaces.sh` (the same sweep already used
+for the close-your-last-window-without-navigating-away gap) after a brief
+settle delay, rather than a dedicated script.
 
 ## Requirements
 
@@ -180,6 +205,11 @@ automatically -- remove yabai/skhd from that list yourself if you want to.
   jumping straight to slot 5 with only 3 slots existing creates 4 and 5, but
   purging only evaluates a space when you actually navigate away from it, so
   slot 4 (never visited) can sit there until something eventually does.
+- **External monitor disconnect assumes macOS always merges onto space 1**
+  -- that's what was observed on the one real disconnect this was tested
+  against, not something documented or guaranteed by macOS. If a future
+  macOS version (or a different setup) merges onto a different space
+  instead, `handle-display-removed.sh` would need updating to match.
 - **No visual per-monitor slot indicator** -- bsptile's dot-row (`● ● ○ ○`)
   isn't ported. If you want one, a menu-bar tool like SketchyBar could read
   `yabai -m query --spaces` and render it, but that's a separate project

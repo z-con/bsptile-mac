@@ -27,15 +27,28 @@ find_one_extra() {
     # removing a space renumbers the ones after it, so a list of "extra"
     # indexes computed before any removal can point at the wrong space by
     # the time a later removal in the same sweep runs.
-    local display_idx="$1" last_occupied reserved
-    last_occupied="$(yabai -m query --spaces | jq -r --argjson d "$display_idx" \
-        '[.[] | select(.display == $d) | select((.windows | length) > 0) | .index] | max // 0')"
+    #
+    # "occupied" is computed via `--query --windows`, filtered to
+    # `has-ax-reference == true`, rather than trusting a space's own
+    # `.windows` array (or even the unfiltered window list). A zombie
+    # window record -- an app that quit or closed its last window
+    # without yabai's own bookkeeping ever clearing the reference --
+    # keeps appearing there indefinitely with `has-ax-reference: false`,
+    # which made an actually-empty space look permanently "occupied" and
+    # never get cleaned up. `is-visible` is *not* a usable substitute for
+    # this: it's false for any real window on a space that isn't
+    # currently the visible one, not just zombies.
+    local display_idx="$1" last_occupied reserved occupied_spaces
+    last_occupied="$(yabai -m query --windows | jq -r --argjson d "$display_idx" \
+        '[.[] | select(.display == $d) | select(."has-ax-reference" == true)] | group_by(.space) | map(.[0].space) | max // 0')"
     reserved=$((last_occupied + 1))
+    occupied_spaces="$(yabai -m query --windows | jq -c --argjson d "$display_idx" \
+        '[.[] | select(.display == $d) | select(."has-ax-reference" == true) | .space] | unique')"
     # never touch the focused space itself -- Mission Control can't remove
     # the active space anyway, and forcibly navigating the user off
     # whatever they're sitting on would be its own kind of bug.
-    yabai -m query --spaces | jq -r --argjson d "$display_idx" --argjson r "$reserved" \
-        '[.[] | select(.display == $d) | select((.windows | length) == 0) | select(.index != $r) | select(."has-focus" == false) | .index] | first // empty'
+    yabai -m query --spaces | jq -r --argjson d "$display_idx" --argjson r "$reserved" --argjson occ "$occupied_spaces" \
+        '[.[] | select(.display == $d) | . as $space | select($occ | index($space.index) | not) | select($space.index != $r) | select($space."has-focus" == false) | $space.index] | first // empty'
 }
 
 yabai -m query --displays | jq -r '.[].index' | while IFS= read -r display_idx; do
