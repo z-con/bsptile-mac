@@ -11,8 +11,8 @@
 #
 # Slot creation goes through create-space.sh (Mission Control's own "+"
 # button via Accessibility) rather than `yabai -m space --create`, which
-# needs SIP partially disabled -- see that script for the caveats,
-# including: untested with multiple displays.
+# needs SIP partially disabled -- see that script for how it targets the
+# right display.
 set -euo pipefail
 
 BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -35,7 +35,11 @@ read_space_indexes
 
 attempts=0
 while [ "${#space_indexes[@]}" -lt "$n" ] && [ "$attempts" -lt 10 ]; do
-    "$BIN_DIR/create-space.sh" || true
+    # create-space.sh needs an existing space already on the target
+    # display to find the right Mission Control group to act on -- the
+    # last (highest-index) one already on this display works.
+    anchor="${space_indexes[$((${#space_indexes[@]} - 1))]}"
+    "$BIN_DIR/create-space.sh" "$anchor" || true
     attempts=$((attempts + 1))
     read_space_indexes
 done

@@ -196,11 +196,15 @@ automatically -- remove yabai/skhd from that list yourself if you want to.
   Control open and closed on screen, and `bin/space-move.sh`'s window-move
   step (`yabai -m window --space`) still needs SIP partially disabled, so
   moving a window to another slot doesn't work without that.
-- **Both untested with multiple displays** -- Mission Control shows a
-  separate Spaces Bar per display when "Displays have separate Spaces" is
-  on; `create-space.sh`/`purge-empty-space.sh` target whichever one they
-  find first under the Dock process's UI tree, which is unambiguous on a
-  single display but may not hit the intended one on a multi-monitor setup.
+- ~~Both untested with multiple displays~~ -- fixed and verified with two
+  displays connected. Mission Control shows a separate Spaces Bar per
+  display, but its "Desktop N" labels turned out to be numbered globally
+  consistent with yabai's own space index (a second display's Spaces Bar
+  showed "Desktop 3, 4, 5", not restarting at 1), so `create-space.sh` and
+  `remove-desktop.sh` search every display's Spaces Bar for the matching
+  label/anchor rather than assuming the first one they find -- which is
+  what they used to do, silently acting on the wrong display (or doing
+  nothing at all) whenever the target space was actually on a second one.
 - **A slot created only to reach a higher one can be left behind empty** --
   jumping straight to slot 5 with only 3 slots existing creates 4 and 5, but
   purging only evaluates a space when you actually navigate away from it, so

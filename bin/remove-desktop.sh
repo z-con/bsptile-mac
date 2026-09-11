@@ -14,13 +14,39 @@
 # a few seconds later during the transition -- not reproduced on retest,
 # cause unconfirmed.
 #
-# CAVEAT: matches "Desktop N" by yabai's own space `index`, which is a
-# single global ordering across every display. Mission Control numbers
-# Desktops per-display in its Spaces Bar, so this mapping only holds on a
-# single-display setup -- untested with multiple displays.
+# Matches "Desktop N" by yabai's own space `index`. Mission Control shows
+# one Spaces Bar per display, but confirmed directly with two displays
+# connected: its "Desktop N" numbering is globally consistent with
+# yabai's own space index (display 2's own Spaces Bar showed "Desktop 3,
+# 4, 5", not restarting at 1) -- so the label to search for never needs
+# adjusting per display. What does need adjusting: the AppleScript
+# used to search only the *first* display group under Mission Control's
+# top-level AXGroup, so removing a space that was actually on a second
+# display silently did nothing (the label was never on display 1's own
+# Spaces Bar to find). Fixed by searching every display group's Spaces
+# Bar for the matching label instead of assuming the first one.
 set -uo pipefail
 
 space_index="${1:?usage: remove-desktop.sh <space index>}"
+
+# purge-empty-space.sh, ensure-spare-space.sh, and consolidate-spare-
+# spaces.sh (the three callers into this and create-space.sh) have no
+# coordination with each other -- if two fire close together (e.g.
+# opening a window on one space while leaving another), each
+# independently drives Mission Control and they race each other's own
+# open/close cycles, which looks like it's stuck toggling. Serialize
+# across all Mission-Control-driving operations with a shared lock rather
+# than letting that happen; a second caller just waits briefly for the
+# first to finish instead of racing it.
+MC_LOCK="$HOME/.cache/yabai/mission_control.lock"
+mkdir -p "$(dirname "$MC_LOCK")"
+got_lock=0
+for i in $(seq 1 20); do
+    mkdir "$MC_LOCK" 2>/dev/null && { got_lock=1; break; }
+    sleep 0.25
+done
+[ "$got_lock" = "1" ] || exit 1
+trap 'rmdir "$MC_LOCK" 2>/dev/null' EXIT
 
 # `index` is positional (shifts when other spaces are added/removed around
 # it); `id` is this space's own stable identifier, unaffected by that --
@@ -40,12 +66,15 @@ on run argv
     tell application "System Events"
         tell process "Dock"
             set mc to (first UI element whose role is "AXGroup" and name is "Mission Control")
-            set g to item 1 of (UI elements of mc)
-            set spacesBar to (first UI element of g whose name is "Spaces Bar")
-            set theList to (first UI element of spacesBar whose role is "AXList")
             set target to missing value
-            repeat with e in (UI elements of theList)
-                if name of e is ("Desktop " & spaceIndex) then set target to e
+            repeat with g in (UI elements of mc)
+                try
+                    set spacesBar to (first UI element of g whose name is "Spaces Bar")
+                    set theList to (first UI element of spacesBar whose role is "AXList")
+                    repeat with e in (UI elements of theList)
+                        if name of e is ("Desktop " & spaceIndex) then set target to e
+                    end repeat
+                end try
             end repeat
             if target is not missing value then
                 perform action "AXRemoveDesktop" of target
